@@ -1,805 +1,411 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Minecraft Bedrock Texture Path Array Builder (Latest Stable Release)</title>
-  <style>
-    :root{
-      --bg:#070a12; --panel:#0b1222; --panel2:#09101f; --text:#eaf1ff; --muted:#9bb0d3;
-      --line:rgba(124,183,255,.22); --line2:rgba(124,183,255,.12);
-      --accent:#7cb7ff; --accent2:#a7ffea; --bad:#ff6b6b; --good:#7dffb3;
-      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0; font-family:var(--sans); color:var(--text); background:
-        radial-gradient(900px 500px at 20% 10%, rgba(124,183,255,.18), transparent 60%),
-        radial-gradient(900px 500px at 80% 10%, rgba(167,255,234,.10), transparent 60%),
-        radial-gradient(1200px 700px at 50% 95%, rgba(124,183,255,.10), transparent 60%),
-        var(--bg);
-      min-height:100vh;
-    }
-    header{
-      padding:22px 16px 10px;
-      border-bottom:1px solid var(--line2);
-      background:linear-gradient(180deg, rgba(11,18,34,.88), rgba(11,18,34,.55));
-      position:sticky; top:0; backdrop-filter: blur(10px);
-      z-index:2;
-    }
-    h1{margin:0; font-size:18px; letter-spacing:.2px}
-    .sub{margin-top:6px; color:var(--muted); font-size:13px; line-height:1.35}
-    main{max-width:1200px; margin:0 auto; padding:14px 16px 28px}
-    .grid{display:grid; grid-template-columns: 1.1fr .9fr; gap:14px}
-    @media (max-width: 980px){ .grid{grid-template-columns:1fr} header{position:relative} }
-    .card{
-      background:linear-gradient(180deg, rgba(11,18,34,.9), rgba(9,16,31,.86));
-      border:1px solid var(--line2);
-      border-radius:14px;
-      padding:14px;
-      box-shadow:0 14px 50px rgba(0,0,0,.35);
-    }
-    .card h2{margin:0 0 10px; font-size:14px; color:var(--text)}
-    label{display:block; font-size:12px; color:var(--muted); margin:10px 0 6px}
-    input, textarea, select{
-      width:100%;
-      background:rgba(6,10,18,.65);
-      border:1px solid var(--line2);
-      color:var(--text);
-      border-radius:12px;
-      padding:10px 12px;
-      outline:none;
-      font-size:13px;
-    }
-    textarea{min-height:120px; font-family:var(--mono); resize:vertical}
-    input:focus, textarea:focus, select:focus{border-color:var(--accent); box-shadow:0 0 0 4px rgba(124,183,255,.12)}
-    .row{display:grid; grid-template-columns:1fr 1fr; gap:10px}
-    @media (max-width: 720px){ .row{grid-template-columns:1fr} }
-    .btns{display:flex; flex-wrap:wrap; gap:10px; margin-top:12px}
-    button{
-      border:1px solid var(--line);
-      background:linear-gradient(180deg, rgba(124,183,255,.18), rgba(124,183,255,.10));
-      color:var(--text);
-      border-radius:12px;
-      padding:10px 12px;
-      font-size:13px;
-      cursor:pointer;
-      transition:transform .05s ease, background .15s ease, border-color .15s ease;
-    }
-    button:hover{border-color:rgba(124,183,255,.45)}
-    button:active{transform:translateY(1px)}
-    button.secondary{
-      background:linear-gradient(180deg, rgba(167,255,234,.14), rgba(167,255,234,.08));
-      border-color:rgba(167,255,234,.22);
-    }
-    button.ghost{
-      background:transparent;
-      border-color:var(--line2);
-      color:var(--muted);
-    }
-    .status{
-      margin-top:10px;
-      font-size:12px;
-      color:var(--muted);
-      display:flex; gap:10px; align-items:center; flex-wrap:wrap;
-    }
-    .pill{
-      padding:4px 10px;
-      border-radius:999px;
-      border:1px solid var(--line2);
-      background:rgba(6,10,18,.55);
-      font-family:var(--mono);
-      font-size:12px;
-      color:var(--muted);
-    }
-    .pill.good{border-color:rgba(125,255,179,.24); color:var(--good)}
-    .pill.bad{border-color:rgba(255,107,107,.28); color:var(--bad)}
-    .mono{font-family:var(--mono)}
-    .small{font-size:12px; color:var(--muted); line-height:1.45}
-    .warn{border-left:3px solid rgba(255,187,107,.65); padding-left:10px}
-    .ok{border-left:3px solid rgba(125,255,179,.45); padding-left:10px}
-    .kvs{display:grid; grid-template-columns: 140px 1fr; gap:8px; margin-top:10px}
-    @media (max-width: 720px){ .kvs{grid-template-columns:1fr} }
-    .k{color:var(--muted); font-size:12px}
-    .v{font-family:var(--mono); font-size:12px; color:var(--text); word-break:break-all}
-    .divider{height:1px; background:var(--line2); margin:12px 0}
-    .footer{margin-top:14px; color:var(--muted); font-size:12px}
-    a{color:var(--accent)}
-    .spin{
-      width:14px; height:14px; border:2px solid rgba(124,183,255,.25);
-      border-top-color: rgba(124,183,255,.9);
-      border-radius:50%;
-      display:inline-block;
-      animation:spin .8s linear infinite;
-    }
-    @keyframes spin{to{transform:rotate(360deg)}}
-    .hidden{display:none !important}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bedrock Texture Extractor | Protocol Omega</title>
+    <meta name="description" content="Automated tool to extract and list valid texture paths from the latest stable Minecraft Bedrock samples.">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    /* Results list */
-    .listTools{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:10px}
-    .hint{color:var(--muted); font-size:12px}
-    .resultsWrap{margin-top:10px}
-    .resultsTop{
-      display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap;
-      padding:10px 10px; border:1px solid var(--line2); border-radius:14px;
-      background:rgba(6,10,18,.35);
-    }
-    .resultsTop .left{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
-    .toggleRow{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
-    .toggleRow label{margin:0}
-    .toggleRow input[type="checkbox"]{width:auto; transform:translateY(1px)}
-    .countBadge{
-      font-family:var(--mono);
-      font-size:12px;
-      padding:5px 10px;
-      border:1px solid var(--line2);
-      border-radius:999px;
-      background:rgba(6,10,18,.45);
-      color:var(--muted);
-    }
-    .results{
-      margin-top:10px;
-      border:1px solid var(--line2);
-      border-radius:14px;
-      overflow:hidden;
-      background:rgba(6,10,18,.35);
-      max-height:520px;
-      overflow:auto;
-    }
-    .rowItem{
-      display:grid;
-      grid-template-columns: 42px 1fr auto;
-      gap:10px;
-      align-items:center;
-      padding:10px;
-      border-top:1px solid rgba(124,183,255,.08);
-    }
-    .rowItem:first-child{border-top:none}
-    .iconBox{
-      width:34px; height:34px;
-      border-radius:10px;
-      border:1px solid rgba(124,183,255,.15);
-      background:rgba(11,18,34,.6);
-      display:grid; place-items:center;
-      overflow:hidden;
-      position:relative;
-    }
-    .iconBox img{
-      width:100%; height:100%;
-      object-fit:cover;
-      image-rendering: pixelated;
-      display:block;
-    }
-    .iconFallback{
-      font-family:var(--mono);
-      color:rgba(124,183,255,.75);
-      font-size:12px;
-      padding:0 6px;
-      text-align:center;
-      line-height:1.1;
-    }
-    .pathText{
-      font-family:var(--mono);
-      font-size:12px;
-      color:var(--text);
-      word-break:break-all;
-    }
-    .actions{
-      display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end;
-    }
-    .miniBtn{
-      padding:8px 10px;
-      border-radius:12px;
-      font-size:12px;
-    }
-    .miniBtn.ghost{padding:8px 10px}
-    .miniPill{
-      font-family:var(--mono);
-      font-size:11px;
-      color:var(--muted);
-      border:1px solid rgba(124,183,255,.12);
-      border-radius:999px;
-      padding:4px 8px;
-      background:rgba(6,10,18,.4);
-    }
-  </style>
-</head>
-<body>
-<header>
-  <h1>Minecraft Bedrock Texture Path Array Builder</h1>
-  <div class="sub">
-    Pulls texture paths from a GitHub repo and (by default) always uses the <b>latest stable release</b>.
-    Includes search, thumbnails, and per-path copy.
-  </div>
-</header>
+    <!-- Google Fonts: JetBrains Mono for that coding/tech feel -->
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 
-<main>
-  <div class="grid">
-    <section class="card">
-      <h2>Source</h2>
-
-      <div class="small ok">
-        Default repo is <span class="mono">Mojang/bedrock-samples</span> and the tool automatically resolves the <b>latest stable release</b>
-        using GitHub’s <span class="mono">/releases/latest</span> endpoint (non-draft, non-prerelease).
-      </div>
-
-      <div class="row">
-        <div>
-          <label for="repo">GitHub repo (owner/name)</label>
-          <input id="repo" placeholder="Mojang/bedrock-samples" value="Mojang/bedrock-samples" autocomplete="off" />
-        </div>
-        <div>
-          <label for="ref">Ref override (tag/branch/commit) — optional</label>
-          <input id="ref" placeholder="Leave blank = use latest stable release tag" autocomplete="off" />
-        </div>
-      </div>
-
-      <div class="row">
-        <div>
-          <label for="pathFilter">Only include files under this path (substring match)</label>
-          <input id="pathFilter" value="textures/" autocomplete="off" />
-        </div>
-        <div>
-          <label for="exts">Extensions (comma-separated)</label>
-          <input id="exts" value=".png,.tga,.jpg,.jpeg,.gif,.webp" autocomplete="off" />
-        </div>
-      </div>
-
-      <label for="token">GitHub token — optional (avoids rate limits)</label>
-      <input id="token" placeholder="ghp_... (kept only in this page memory)" autocomplete="off" />
-
-      <div class="btns">
-        <button id="btnFetch">Fetch texture paths</button>
-        <button id="btnClear" class="ghost">Clear</button>
-      </div>
-
-      <div id="status" class="status hidden">
-        <span id="spin" class="spin hidden"></span>
-        <span id="statusText"></span>
-        <span id="statusPill" class="pill hidden"></span>
-      </div>
-
-      <div class="divider"></div>
-
-      <div class="row">
-        <div>
-          <h2>Output options</h2>
-          <label for="mode">Output format</label>
-          <select id="mode">
-            <option value="relative" selected>Relative paths (repo paths)</option>
-            <option value="raw">Raw GitHub URLs</option>
-          </select>
-
-          <div class="btns">
-            <button id="btnDownloadJS" class="secondary" disabled>Download JS array</button>
-            <button id="btnDownloadJSON" class="secondary" disabled>Download JSON</button>
-            <button id="btnCopyAll" disabled>Copy current preview</button>
-          </div>
-
-          <div class="footer">
-            Release source: <span class="mono">https://github.com/Mojang/bedrock-samples/releases</span>
-          </div>
-        </div>
-        <div>
-          <h2>Resolved release</h2>
-          <div class="kvs">
-            <div class="k">Repo</div><div class="v" id="statRepo">—</div>
-            <div class="k">Release tag</div><div class="v" id="statTag">—</div>
-            <div class="k">Published</div><div class="v" id="statPub">—</div>
-            <div class="k">Matches</div><div class="v" id="statCount">0</div>
-            <div class="k">Truncated</div><div class="v" id="statTrunc">—</div>
-          </div>
-          <div class="small" style="margin-top:10px">
-            If GitHub returns <span class="mono">truncated: true</span>, the repo tree exceeded the maximum size for this endpoint.
-          </div>
-        </div>
-      </div>
-
-      <div class="divider"></div>
-
-      <h2>Search & browse</h2>
-      <label for="search">Search within results</label>
-      <input id="search" placeholder="Search (e.g. blocks/stone, ui/, armor, .png)..." autocomplete="off" />
-
-      <div class="listTools">
-        <div class="toggleRow">
-          <input id="thumbs" type="checkbox" checked />
-          <label for="thumbs" style="display:inline">Show icons</label>
-        </div>
-        <div class="toggleRow">
-          <input id="clickCopy" type="checkbox" checked />
-          <label for="clickCopy" style="display:inline">Click path to copy</label>
-        </div>
-        <span class="hint">Icons are loaded from raw GitHub URLs (works best for .png/.jpg/.webp).</span>
-      </div>
-
-      <div class="resultsWrap">
-        <div class="resultsTop">
-          <div class="left">
-            <span class="countBadge"><span id="shownCount">0</span> shown</span>
-            <span class="countBadge"><span id="totalCount">0</span> total</span>
-            <span class="countBadge"><span id="pageInfo">—</span></span>
-          </div>
-          <div class="right">
-            <button id="btnShowMore" class="ghost miniBtn" disabled>Show more</button>
-            <button id="btnCopyFiltered" class="miniBtn" disabled>Copy filtered (paths)</button>
-          </div>
-        </div>
-
-        <div id="results" class="results" aria-live="polite"></div>
-
-        <div class="small" style="margin-top:10px">
-          <b>Copy any path:</b> use the “Copy” button on a row, or (if enabled) tap/click the path text.
-        </div>
-      </div>
-
-    </section>
-
-    <section class="card">
-      <h2>Preview</h2>
-      <label for="out">Generated array (preview)</label>
-      <textarea id="out" spellcheck="false" placeholder="Click “Fetch texture paths” to generate…"></textarea>
-      <div class="small ok" style="margin-top:10px">
-        Tip: For resource packs, texture references are usually relative to the pack (like <span class="mono">textures/blocks/stone.png</span>).
-      </div>
-    </section>
-  </div>
-</main>
-
-<script>
-(() => {
-  const $ = (id) => document.getElementById(id);
-
-  const els = {
-    repo: $("repo"),
-    ref: $("ref"),
-    pathFilter: $("pathFilter"),
-    exts: $("exts"),
-    token: $("token"),
-    btnFetch: $("btnFetch"),
-    btnClear: $("btnClear"),
-    btnDownloadJS: $("btnDownloadJS"),
-    btnDownloadJSON: $("btnDownloadJSON"),
-    btnCopyAll: $("btnCopyAll"),
-    out: $("out"),
-    mode: $("mode"),
-    status: $("status"),
-    spin: $("spin"),
-    statusText: $("statusText"),
-    statusPill: $("statusPill"),
-    statRepo: $("statRepo"),
-    statTag: $("statTag"),
-    statPub: $("statPub"),
-    statCount: $("statCount"),
-    statTrunc: $("statTrunc"),
-    search: $("search"),
-    results: $("results"),
-    shownCount: $("shownCount"),
-    totalCount: $("totalCount"),
-    pageInfo: $("pageInfo"),
-    btnShowMore: $("btnShowMore"),
-    btnCopyFiltered: $("btnCopyFiltered"),
-    thumbs: $("thumbs"),
-    clickCopy: $("clickCopy"),
-  };
-
-  const PAGE_SIZE = 250;
-  let renderLimit = PAGE_SIZE;
-
-  let last = {
-    owner: "",
-    repo: "",
-    ref: "",            // the ref we actually use for trees/raw URLs (tag or branch)
-    releaseTag: "",     // resolved stable release tag (if used)
-    publishedAt: "",    // published timestamp (if release)
-    truncated: false,
-    relativePaths: [],
-    rawUrls: [],
-  };
-
-  function setStatus(text, kind=null, pillText=null) {
-    els.status.classList.remove("hidden");
-    els.spin.classList.toggle("hidden", kind !== "loading");
-    els.statusText.textContent = text || "";
-    if (pillText) {
-      els.statusPill.textContent = pillText;
-      els.statusPill.classList.remove("hidden", "good", "bad");
-      if (kind === "good") els.statusPill.classList.add("good");
-      if (kind === "bad") els.statusPill.classList.add("bad");
-    } else {
-      els.statusPill.classList.add("hidden");
-    }
-  }
-
-  function clearAll() {
-    last = { owner:"", repo:"", ref:"", releaseTag:"", publishedAt:"", truncated:false, relativePaths:[], rawUrls:[] };
-    renderLimit = PAGE_SIZE;
-    els.out.value = "";
-    els.search.value = "";
-    els.results.innerHTML = "";
-    els.statRepo.textContent = "—";
-    els.statTag.textContent = "—";
-    els.statPub.textContent = "—";
-    els.statCount.textContent = "0";
-    els.statTrunc.textContent = "—";
-    els.shownCount.textContent = "0";
-    els.totalCount.textContent = "0";
-    els.pageInfo.textContent = "—";
-    for (const b of [els.btnDownloadJS, els.btnDownloadJSON, els.btnCopyAll, els.btnCopyFiltered, els.btnShowMore]) b.disabled = true;
-    els.status.classList.add("hidden");
-  }
-
-  function safeJson(value) {
-    return JSON.stringify(value, null, 2);
-  }
-
-  function parseRepo(input) {
-    const t = (input || "").trim().replace(/^https?:\/\/github\.com\//i, "").replace(/\/+$/,"");
-    const parts = t.split("/");
-    if (parts.length < 2) return null;
-    const owner = parts[0].trim();
-    const repo = parts[1].trim().replace(/\.git$/i, "");
-    if (!owner || !repo) return null;
-    return { owner, repo };
-  }
-
-  function parseExts(input) {
-    return (input || "")
-      .split(",")
-      .map(s => s.trim().toLowerCase())
-      .filter(Boolean)
-      .map(s => s.startsWith(".") ? s : ("." + s));
-  }
-
-  function makeHeaders() {
-    const h = { "Accept": "application/vnd.github+json" };
-    const token = (els.token.value || "").trim();
-    if (token) h["Authorization"] = "Bearer " + token;
-    return h;
-  }
-
-  async function ghJson(url) {
-    const r = await fetch(url, { headers: makeHeaders() });
-    const text = await r.text();
-    let data = null;
-    try { data = JSON.parse(text); } catch {}
-    if (!r.ok) {
-      const msg = (data && (data.message || data.error)) ? (data.message || data.error) : text;
-      const err = new Error(`GitHub API error ${r.status}: ${msg}`);
-      err.status = r.status;
-      err.payload = data;
-      throw err;
-    }
-    return data;
-  }
-
-  function rawUrlForPath(p) {
-    if (!last.owner || !last.repo || !last.ref) return "";
-    return `https://raw.githubusercontent.com/${last.owner}/${last.repo}/${last.ref}/${p}`;
-  }
-
-  function getArrayForMode(mode) {
-    return (mode === "raw") ? last.rawUrls : last.relativePaths;
-  }
-
-  function buildPreview() {
-    const mode = els.mode.value;
-    const arr = getArrayForMode(mode);
-
-    const refLine = last.releaseTag
-      ? `// Release tag: ${last.releaseTag}\n// Published: ${last.publishedAt || "—"}\n`
-      : "";
-
-    const preview = `// Generated: ${new Date().toISOString()}\n` +
-      `// Repo: ${last.owner}/${last.repo}\n` +
-      refLine +
-      `// Ref used: ${last.ref}\n` +
-      `// Count: ${arr.length}\n` +
-      `const texturePaths = ${safeJson(arr)};\n`;
-
-    els.out.value = preview;
-
-    const enabled = (arr.length > 0);
-    for (const b of [els.btnDownloadJS, els.btnDownloadJSON, els.btnCopyAll]) b.disabled = !enabled;
-  }
-
-  function downloadText(filename, content, mime="text/plain") {
-    const blob = new Blob([content], { type: mime });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 2000);
-  }
-
-  async function copyToClipboard(text) {
-    try {
-      await navigator.clipboard.writeText(text);
-      setStatus("Copied to clipboard.", "good", "OK");
-      return true;
-    } catch { return false; }
-  }
-
-  function legacyCopy(text) {
-    const ta = document.createElement("textarea");
-    ta.value = text;
-    ta.style.position = "fixed";
-    ta.style.left = "-9999px";
-    ta.style.top = "-9999px";
-    document.body.appendChild(ta);
-    ta.focus();
-    ta.select();
-    const ok = document.execCommand("copy");
-    ta.remove();
-    setStatus(ok ? "Copied to clipboard." : "Copy failed. Try again.", ok ? "good" : "bad", ok ? "OK" : "ERR");
-    return ok;
-  }
-
-  async function copySmart(text) {
-    const ok = await copyToClipboard(text);
-    if (!ok) legacyCopy(text);
-  }
-
-  function currentFilteredPaths() {
-    const q = (els.search.value || "").trim().toLowerCase();
-    const arr = last.relativePaths;
-    if (!q) return arr.slice();
-    return arr.filter(p => p.toLowerCase().includes(q));
-  }
-
-  function updatePagingUI(filteredLen) {
-    const shown = Math.min(filteredLen, renderLimit);
-    els.shownCount.textContent = String(shown);
-    els.totalCount.textContent = String(filteredLen);
-    els.pageInfo.textContent = filteredLen ? `${shown}/${filteredLen}` : "—";
-    els.btnShowMore.disabled = !(filteredLen > renderLimit);
-    els.btnCopyFiltered.disabled = (filteredLen === 0);
-  }
-
-  function createRowItem(path) {
-    const row = document.createElement("div");
-    row.className = "rowItem";
-
-    const icon = document.createElement("div");
-    icon.className = "iconBox";
-
-    const ext = (path.toLowerCase().match(/\.[a-z0-9]+$/) || [""])[0];
-    const fallback = document.createElement("div");
-    fallback.className = "iconFallback";
-    fallback.textContent = ext ? ext.slice(1).toUpperCase() : "FILE";
-    icon.appendChild(fallback);
-
-    const img = document.createElement("img");
-    img.loading = "lazy";
-    img.decoding = "async";
-
-    const isLikelyImage = [".png",".jpg",".jpeg",".gif",".webp",".tga"].includes(ext);
-    if (isLikelyImage) {
-      const u = rawUrlForPath(path);
-      img.src = u;
-      img.alt = "";
-      img.addEventListener("load", () => {
-        if (!icon.contains(img)) {
-          icon.innerHTML = "";
-          icon.appendChild(img);
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                    },
+                    colors: {
+                        cyber: {
+                            dark: '#050b14',
+                            panel: '#0f172a',
+                            border: '#1e293b',
+                            cyan: '#06b6d4',
+                            cyanHover: '#0891b2',
+                            purple: '#d946ef',
+                            success: '#22c55e'
+                        }
+                    },
+                    boxShadow: {
+                        'neon': '0 0 10px rgba(6, 182, 212, 0.5), 0 0 20px rgba(6, 182, 212, 0.3)',
+                        'neon-purple': '0 0 10px rgba(217, 70, 239, 0.5), 0 0 20px rgba(217, 70, 239, 0.3)',
+                    }
+                }
+            }
         }
-      }, { once:true });
-      img.addEventListener("error", () => {}, { once:true });
-    }
+    </script>
 
-    const text = document.createElement("div");
-    text.className = "pathText";
-    text.textContent = path;
-    text.title = "Copy path";
-    if (els.clickCopy.checked) {
-      text.style.cursor = "pointer";
-      text.addEventListener("click", () => copySmart(path));
-    } else {
-      text.style.cursor = "default";
-    }
+    <style>
+        body {
+            background-color: #050b14;
+            background-image: 
+                linear-gradient(rgba(6, 182, 212, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(6, 182, 212, 0.05) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
 
-    const actions = document.createElement("div");
-    actions.className = "actions";
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #06b6d4; 
+        }
 
-    const copyBtn = document.createElement("button");
-    copyBtn.className = "miniBtn";
-    copyBtn.type = "button";
-    copyBtn.textContent = "Copy";
-    copyBtn.addEventListener("click", () => copySmart(path));
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(30, 41, 59, 0.8);
+        }
 
-    const rawBtn = document.createElement("button");
-    rawBtn.className = "miniBtn ghost";
-    rawBtn.type = "button";
-    rawBtn.textContent = "Raw";
-    rawBtn.title = "Open raw file URL in a new tab";
-    rawBtn.addEventListener("click", () => {
-      const u = rawUrlForPath(path);
-      if (u) window.open(u, "_blank", "noopener,noreferrer");
-    });
+        .loader {
+            border: 3px solid #1e293b;
+            border-top: 3px solid #06b6d4;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
 
-    const tag = document.createElement("span");
-    tag.className = "miniPill";
-    tag.textContent = ext || "—";
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
 
-    actions.appendChild(tag);
-    actions.appendChild(copyBtn);
-    actions.appendChild(rawBtn);
+        /* Image loading fade in */
+        .texture-img {
+            opacity: 0;
+            transition: opacity 0.3s ease-in;
+        }
+        .texture-img.loaded {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="text-slate-300 font-mono min-h-screen flex flex-col">
 
-    row.appendChild(icon);
-    row.appendChild(text);
-    row.appendChild(actions);
+    <!-- Header -->
+    <header class="w-full p-6 border-b border-cyber-border glass-panel sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <i class="fa-solid fa-cube text-cyber-cyan text-3xl drop-shadow-[0_0_8px_rgba(6,182,212,0.8)]"></i>
+                <div>
+                    <h1 class="text-2xl font-bold text-white tracking-tighter">TEXTURE<span class="text-cyber-cyan">EXTRACTOR</span></h1>
+                    <div id="version-display" class="text-xs text-cyber-purple font-bold tracking-widest uppercase">INITIALIZING SYSTEM...</div>
+                </div>
+            </div>
 
-    const showThumbs = els.thumbs.checked;
-    icon.style.visibility = showThumbs ? "visible" : "hidden";
-    icon.style.width = showThumbs ? "34px" : "0px";
-    icon.style.height = showThumbs ? "34px" : "0px";
-    icon.style.marginRight = showThumbs ? "" : "-10px";
+            <div class="flex items-center gap-4 w-full md:w-auto">
+                <div class="relative w-full md:w-64 group">
+                    <i class="fa-solid fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500 group-focus-within:text-cyber-cyan transition-colors"></i>
+                    <input type="text" id="search-input" placeholder="SEARCH PATHS..." 
+                        class="w-full bg-cyber-dark border border-cyber-border rounded px-10 py-2 text-sm focus:outline-none focus:border-cyber-cyan focus:shadow-neon transition-all placeholder-slate-600">
+                </div>
+                
+                <button id="download-btn" disabled onclick="downloadJSON()"
+                    class="flex items-center gap-2 bg-cyber-dark border border-cyber-cyan text-cyber-cyan px-4 py-2 rounded text-sm hover:bg-cyber-cyan hover:text-black transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-neon">
+                    <i class="fa-solid fa-download"></i>
+                    <span>EXPORT.JSON</span>
+                </button>
+            </div>
+        </div>
+    </header>
 
-    return row;
-  }
+    <!-- Main Content -->
+    <main class="flex-grow p-4 md:p-8 max-w-7xl mx-auto w-full">
+        
+        <!-- Status / Metrics Bar -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div class="glass-panel p-4 rounded border-l-4 border-cyber-cyan">
+                <div class="text-xs text-slate-500 uppercase">Target Repository</div>
+                <div class="text-white font-bold truncate">Mojang/bedrock-samples</div>
+            </div>
+            <div class="glass-panel p-4 rounded border-l-4 border-cyber-purple">
+                <div class="text-xs text-slate-500 uppercase">Textures Found</div>
+                <div id="count-display" class="text-white font-bold flex items-center gap-2">
+                    <span>0</span>
+                    <span id="loading-spinner" class="loader hidden"></span>
+                </div>
+            </div>
+            <div class="glass-panel p-4 rounded border-l-4 border-white">
+                <div class="text-xs text-slate-500 uppercase">System Status</div>
+                <div id="status-text" class="text-cyber-success font-bold">STANDBY</div>
+            </div>
+        </div>
 
-  function renderResults() {
-    const filtered = currentFilteredPaths();
-    const toShow = filtered.slice(0, renderLimit);
-    els.results.innerHTML = "";
+        <!-- Notification Toast -->
+        <div id="toast" class="fixed bottom-8 right-8 bg-cyber-panel border border-cyber-success text-white px-6 py-4 rounded shadow-neon transform translate-y-24 transition-transform duration-300 z-50 flex items-center gap-3">
+            <i class="fa-solid fa-check-circle text-cyber-success"></i>
+            <span id="toast-message">Operation Successful</span>
+        </div>
 
-    const frag = document.createDocumentFragment();
-    for (const p of toShow) frag.appendChild(createRowItem(p));
-    els.results.appendChild(frag);
+        <!-- Results Grid -->
+        <div class="glass-panel rounded-lg overflow-hidden min-h-[500px] flex flex-col">
+            <!-- Table Header -->
+            <div class="grid grid-cols-[60px_1fr_100px] bg-cyber-dark/50 p-4 border-b border-cyber-border text-xs uppercase tracking-wider text-slate-500 font-bold sticky top-0">
+                <div class="text-center">Preview</div>
+                <div>Resource Path</div>
+                <div class="text-right">Action</div>
+            </div>
 
-    updatePagingUI(filtered.length);
-  }
+            <!-- List Container -->
+            <div id="results-container" class="overflow-y-auto h-[600px] divide-y divide-cyber-border/30 relative">
+                <!-- Empty State -->
+                <div id="empty-state" class="absolute inset-0 flex flex-col items-center justify-center text-slate-600">
+                    <i class="fa-solid fa-microchip text-6xl mb-4 opacity-20"></i>
+                    <p>INITIATE DATA FETCH SEQUENCE</p>
+                </div>
+            </div>
+        </div>
+    </main>
 
-  async function resolveLatestStableReleaseTag(owner, repo) {
-    // GitHub definition: "latest release" = most recent non-prerelease, non-draft release.
-    const rel = await ghJson(`https://api.github.com/repos/${owner}/${repo}/releases/latest`);
-    const tag = rel && rel.tag_name ? String(rel.tag_name) : "";
-    const published = rel && rel.published_at ? String(rel.published_at) : "";
-    if (!tag) throw new Error("Could not resolve latest stable release tag (missing tag_name).");
-    return { tag, published };
-  }
+    <footer class="p-6 text-center text-xs text-slate-600 border-t border-cyber-border glass-panel mt-auto">
+        <p>GENERATED BY CODE COMPLETE ARCHITECT | TARGET: LATEST STABLE RELEASE</p>
+        <p class="mt-1 opacity-50">NOT AFFILIATED WITH MOJANG AB.</p>
+    </footer>
 
-  async function fetchPaths() {
-    const parsed = parseRepo(els.repo.value);
-    if (!parsed) {
-      setStatus("Enter a repo like “Mojang/bedrock-samples”.", "bad", "INPUT");
-      return;
-    }
-    const refOverride = (els.ref.value || "").trim();
-    const pathFilter = (els.pathFilter.value || "").trim().toLowerCase();
-    const exts = parseExts(els.exts.value);
-    if (exts.length === 0) {
-      setStatus("Enter at least one extension (e.g. .png).", "bad", "INPUT");
-      return;
-    }
+    <script>
+        // --- State Management ---
+        const state = {
+            textures: [],       // Full list of texture objects { path, url, name }
+            filtered: [],       // Currently filtered list
+            version: 'UNKNOWN', // Current tag
+            loading: false
+        };
 
-    setStatus("Contacting GitHub…", "loading");
-    for (const b of [els.btnDownloadJS, els.btnDownloadJSON, els.btnCopyAll, els.btnCopyFiltered, els.btnShowMore]) b.disabled = true;
+        // --- DOM Elements ---
+        const els = {
+            container: document.getElementById('results-container'),
+            searchInput: document.getElementById('search-input'),
+            downloadBtn: document.getElementById('download-btn'),
+            countDisplay: document.getElementById('count-display'),
+            versionDisplay: document.getElementById('version-display'),
+            statusText: document.getElementById('status-text'),
+            spinner: document.getElementById('loading-spinner'),
+            emptyState: document.getElementById('empty-state'),
+            toast: document.getElementById('toast'),
+            toastMsg: document.getElementById('toast-message')
+        };
 
-    try {
-      // 1) Resolve ref: either user override, or latest stable release tag
-      let ref = refOverride;
-      let releaseTag = "";
-      let publishedAt = "";
+        // --- Core Logic ---
 
-      if (!ref) {
-        setStatus(`Resolving latest stable release for ${parsed.owner}/${parsed.repo}…`, "loading");
-        const rel = await resolveLatestStableReleaseTag(parsed.owner, parsed.repo);
-        releaseTag = rel.tag;
-        publishedAt = rel.published;
-        ref = releaseTag;
-      }
+        /**
+         * Initialize the application.
+         */
+        async function init() {
+            updateStatus('CONNECTING TO GITHUB...', true);
+            
+            try {
+                // 1. Get Latest Release
+                const releasesRes = await fetch('https://api.github.com/repos/Mojang/bedrock-samples/releases');
+                if (!releasesRes.ok) throw new Error('GitHub API Rate Limit or Network Error');
+                
+                const releases = await releasesRes.json();
+                
+                // Filter for latest STABLE (not prerelease)
+                const stableRelease = releases.find(r => !r.prerelease) || releases[0];
+                
+                if (!stableRelease) throw new Error('No stable releases found.');
 
-      // 2) Tree (works for tags, branches, commits)
-      setStatus(`Fetching file tree for ${parsed.owner}/${parsed.repo}@${ref}…`, "loading");
-      const tree = await ghJson(`https://api.github.com/repos/${parsed.owner}/${parsed.repo}/git/trees/${encodeURIComponent(ref)}?recursive=1`);
+                state.version = stableRelease.tag_name;
+                els.versionDisplay.innerText = `DETECTED VERSION: ${state.version}`;
+                updateStatus(`FETCHING TREE FOR ${state.version}...`, true);
 
-      const truncated = !!tree.truncated;
-      const items = Array.isArray(tree.tree) ? tree.tree : [];
+                // 2. Get Git Tree (Recursive)
+                const treeUrl = `https://api.github.com/repos/Mojang/bedrock-samples/git/trees/${state.version}?recursive=1`;
+                const treeRes = await fetch(treeUrl);
+                
+                if (!treeRes.ok) throw new Error('Failed to fetch file tree. Repo might be too large.');
+                
+                const treeData = await treeRes.json();
 
-      // 3) Filter
-      const matches = [];
-      for (const it of items) {
-        if (!it || it.type !== "blob" || typeof it.path !== "string") continue;
-        const p = it.path;
-        const pl = p.toLowerCase();
-        if (pathFilter && !pl.includes(pathFilter)) continue;
-        const dot = pl.lastIndexOf(".");
-        if (dot === -1) continue;
-        const ext = pl.slice(dot);
-        if (!exts.includes(ext)) continue;
-        matches.push(p);
-      }
-      matches.sort((a,b) => a.localeCompare(b));
+                // 3. Process Data
+                updateStatus('PROCESSING ASSETS...', true);
+                
+                // Regex to find images inside resource_pack folder
+                // Matches: starts with resource_pack/, ends with .png, .tga, or .jpg
+                const textureRegex = /^resource_pack\/.*\.(png|tga|jpg|jpeg)$/i;
 
-      // 4) Save + build raw URLs
-      last.owner = parsed.owner;
-      last.repo = parsed.repo;
-      last.ref = ref;
-      last.releaseTag = releaseTag;
-      last.publishedAt = publishedAt;
-      last.truncated = truncated;
-      last.relativePaths = matches;
-      last.rawUrls = matches.map(p => rawUrlForPath(p));
+                state.textures = treeData.tree
+                    .filter(item => item.path.match(textureRegex))
+                    .map(item => {
+                        // Clean path: remove 'resource_pack/' prefix for cleaner usage
+                        // Note: Keeping full path is often safer for packs, but user usually wants internal structure
+                        // The prompt asks for "texture paths". Let's provide the relative path inside the RP.
+                        const rawPath = item.path;
+                        const cleanPath = rawPath.replace('resource_pack/', '');
+                        
+                        return {
+                            fullPath: rawPath,
+                            cleanPath: cleanPath,
+                            // Raw content URL for preview
+                            url: `https://raw.githubusercontent.com/Mojang/bedrock-samples/${state.version}/${rawPath}`,
+                            name: cleanPath.split('/').pop()
+                        };
+                    });
 
-      renderLimit = PAGE_SIZE;
+                // Initial Render
+                state.filtered = [...state.textures];
+                renderList();
+                
+                // Enable Controls
+                els.downloadBtn.disabled = false;
+                updateStatus('READY', false);
+                els.emptyState.classList.add('hidden');
 
-      els.statRepo.textContent = `${parsed.owner}/${parsed.repo}`;
-      els.statTag.textContent = releaseTag ? releaseTag : "(override)";
-      els.statPub.textContent = publishedAt || (refOverride ? "(override)" : "—");
-      els.statCount.textContent = String(matches.length);
-      els.statTrunc.textContent = truncated ? "true" : "false";
+            } catch (error) {
+                console.error(error);
+                updateStatus('ERROR: ' + error.message, false);
+                els.statusText.classList.remove('text-cyber-success');
+                els.statusText.classList.add('text-red-500');
+            }
+        }
 
-      buildPreview();
-      renderResults();
+        /**
+         * Render the virtual list of textures.
+         * For performance with thousands of items, we replace innerHTML efficiently.
+         */
+        function renderList() {
+            els.countDisplay.querySelector('span').innerText = state.filtered.length;
+            
+            // Performance Guard: If list is massive (>5000), showing all might lag.
+            // However, browsers handle simple HTML fairly well. 
+            // We'll limit render to first 500 items if search is empty to save DOM, 
+            // but the prompt implies a full list. 
+            // Let's implement a simple "Lazy Render" approach via slice if needed, 
+            // but for simplicity, we will render the chunk.
+            
+            const maxItems = 200; // Render first 200 initially to prevent freeze
+            const displayList = state.filtered.slice(0, 1000); // Limit DOM to 1000 for smoothness
+            
+            if (state.filtered.length === 0) {
+                els.container.innerHTML = `
+                    <div class="flex flex-col items-center justify-center p-10 text-slate-500">
+                        <i class="fa-solid fa-filter-circle-xmark text-4xl mb-2"></i>
+                        <p>NO DATA MATCHED</p>
+                    </div>`;
+                return;
+            }
 
-      if (truncated) {
-        setStatus(`Done, but the tree was truncated by GitHub. Found ${matches.length} matches.`, "bad", "TRUNC");
-      } else {
-        setStatus(`Done. Found ${matches.length} texture files.`, "good", "OK");
-      }
-    } catch (err) {
-      console.error(err);
-      const msg = (err && err.message) ? err.message : String(err);
-      const hint = (err && err.status === 403) ? " (Possible rate limit — add a token.)" : "";
-      setStatus(`Failed: ${msg}${hint}`, "bad", "ERR");
-    }
-  }
+            // Map HTML string
+            const html = displayList.map(item => `
+                <div class="grid grid-cols-[60px_1fr_100px] items-center p-3 hover:bg-cyber-dark transition-colors group">
+                    <!-- Icon -->
+                    <div class="flex justify-center">
+                        <div class="w-10 h-10 bg-slate-800 rounded border border-cyber-border overflow-hidden flex items-center justify-center">
+                            <img src="${item.url}" 
+                                 loading="lazy" 
+                                 alt="icon"
+                                 onload="this.classList.add('loaded')"
+                                 onerror="this.style.display='none'"
+                                 class="texture-img w-full h-full object-contain p-1">
+                        </div>
+                    </div>
+                    
+                    <!-- Path -->
+                    <div class="pl-4 overflow-hidden">
+                        <div class="text-sm text-cyber-cyan truncate font-bold" title="${item.cleanPath}">${item.cleanPath}</div>
+                        <div class="text-xs text-slate-600 truncate">${item.name}</div>
+                    </div>
 
-  els.btnFetch.addEventListener("click", fetchPaths);
-  els.btnClear.addEventListener("click", clearAll);
+                    <!-- Actions -->
+                    <div class="text-right">
+                        <button onclick="copyToClipboard('${item.cleanPath}')" 
+                                class="text-slate-400 hover:text-cyber-purple hover:bg-cyber-purple/10 p-2 rounded transition-all active:scale-95"
+                                title="Copy Path">
+                            <i class="fa-regular fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
 
-  els.mode.addEventListener("change", buildPreview);
+            // Add "Show more" indicator if truncated
+            const moreHtml = state.filtered.length > 1000 
+                ? `<div class="p-4 text-center text-xs text-slate-500 italic">... ${state.filtered.length - 1000} more items hidden. Refine search to see them. ...</div>` 
+                : '';
 
-  els.btnDownloadJS.addEventListener("click", () => {
-    const mode = els.mode.value;
-    const arr = getArrayForMode(mode);
-    const meta = last.releaseTag
-      ? `// Release tag: ${last.releaseTag}\n// Published: ${last.publishedAt || "—"}\n`
-      : "";
-    const content =
-      `// Generated: ${new Date().toISOString()}\n` +
-      `// Repo: ${last.owner}/${last.repo}\n` +
-      meta +
-      `// Ref used: ${last.ref}\n` +
-      `export const texturePaths = ${safeJson(arr)};\n`;
-    const filename = `texturePaths_${last.owner}_${last.repo}_${last.ref}_${mode}.js`.replace(/[^\w.\-]+/g,"_");
-    downloadText(filename, content, "text/javascript");
-  });
+            els.container.innerHTML = html + moreHtml;
+        }
 
-  els.btnDownloadJSON.addEventListener("click", () => {
-    const mode = els.mode.value;
-    const arr = getArrayForMode(mode);
-    const filename = `texturePaths_${last.owner}_${last.repo}_${last.ref}_${mode}.json`.replace(/[^\w.\-]+/g,"_");
-    downloadText(filename, safeJson(arr), "application/json");
-  });
+        /**
+         * Update the UI Search State
+         */
+        els.searchInput.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            state.filtered = state.textures.filter(t => 
+                t.cleanPath.toLowerCase().includes(query)
+            );
+            renderList();
+        });
 
-  els.btnCopyAll.addEventListener("click", async () => copySmart(els.out.value || ""));
+        /**
+         * Download the current list as JSON
+         */
+        function downloadJSON() {
+            if (!state.textures.length) return;
+            
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state.filtered.map(t => t.cleanPath), null, 2));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", `bedrock_textures_${state.version}.json`);
+            document.body.appendChild(downloadAnchorNode); // required for firefox
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+            
+            showToast('JSON DOWNLOAD INITIATED');
+        }
 
-  els.search.addEventListener("input", () => {
-    renderLimit = PAGE_SIZE;
-    renderResults();
-  });
+        /**
+         * Copy path to clipboard
+         */
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('PATH COPIED TO CLIPBOARD');
+            }, (err) => {
+                console.error('Could not copy text: ', err);
+            });
+        }
 
-  els.btnShowMore.addEventListener("click", () => {
-    renderLimit += PAGE_SIZE;
-    renderResults();
-  });
+        /**
+         * UI Helpers
+         */
+        function updateStatus(msg, isLoading) {
+            els.statusText.innerText = msg;
+            state.loading = isLoading;
+            if (isLoading) {
+                els.spinner.classList.remove('hidden');
+                els.statusText.classList.add('animate-pulse');
+            } else {
+                els.spinner.classList.add('hidden');
+                els.statusText.classList.remove('animate-pulse');
+            }
+        }
 
-  els.btnCopyFiltered.addEventListener("click", async () => {
-    const filtered = currentFilteredPaths();
-    await copySmart(filtered.join("\n"));
-  });
+        function showToast(msg) {
+            els.toastMsg.innerText = msg;
+            els.toast.classList.remove('translate-y-24');
+            setTimeout(() => {
+                els.toast.classList.add('translate-y-24');
+            }, 3000);
+        }
 
-  els.thumbs.addEventListener("change", renderResults);
-  els.clickCopy.addEventListener("change", renderResults);
+        // Start
+        window.onload = init;
 
-  clearAll();
-})();
-</script>
+    </script>
 </body>
 </html>
