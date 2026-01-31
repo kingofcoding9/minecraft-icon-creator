@@ -1,0 +1,805 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Minecraft Bedrock Texture Path Array Builder (Latest Stable Release)</title>
+  <style>
+    :root{
+      --bg:#070a12; --panel:#0b1222; --panel2:#09101f; --text:#eaf1ff; --muted:#9bb0d3;
+      --line:rgba(124,183,255,.22); --line2:rgba(124,183,255,.12);
+      --accent:#7cb7ff; --accent2:#a7ffea; --bad:#ff6b6b; --good:#7dffb3;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family:var(--sans); color:var(--text); background:
+        radial-gradient(900px 500px at 20% 10%, rgba(124,183,255,.18), transparent 60%),
+        radial-gradient(900px 500px at 80% 10%, rgba(167,255,234,.10), transparent 60%),
+        radial-gradient(1200px 700px at 50% 95%, rgba(124,183,255,.10), transparent 60%),
+        var(--bg);
+      min-height:100vh;
+    }
+    header{
+      padding:22px 16px 10px;
+      border-bottom:1px solid var(--line2);
+      background:linear-gradient(180deg, rgba(11,18,34,.88), rgba(11,18,34,.55));
+      position:sticky; top:0; backdrop-filter: blur(10px);
+      z-index:2;
+    }
+    h1{margin:0; font-size:18px; letter-spacing:.2px}
+    .sub{margin-top:6px; color:var(--muted); font-size:13px; line-height:1.35}
+    main{max-width:1200px; margin:0 auto; padding:14px 16px 28px}
+    .grid{display:grid; grid-template-columns: 1.1fr .9fr; gap:14px}
+    @media (max-width: 980px){ .grid{grid-template-columns:1fr} header{position:relative} }
+    .card{
+      background:linear-gradient(180deg, rgba(11,18,34,.9), rgba(9,16,31,.86));
+      border:1px solid var(--line2);
+      border-radius:14px;
+      padding:14px;
+      box-shadow:0 14px 50px rgba(0,0,0,.35);
+    }
+    .card h2{margin:0 0 10px; font-size:14px; color:var(--text)}
+    label{display:block; font-size:12px; color:var(--muted); margin:10px 0 6px}
+    input, textarea, select{
+      width:100%;
+      background:rgba(6,10,18,.65);
+      border:1px solid var(--line2);
+      color:var(--text);
+      border-radius:12px;
+      padding:10px 12px;
+      outline:none;
+      font-size:13px;
+    }
+    textarea{min-height:120px; font-family:var(--mono); resize:vertical}
+    input:focus, textarea:focus, select:focus{border-color:var(--accent); box-shadow:0 0 0 4px rgba(124,183,255,.12)}
+    .row{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+    @media (max-width: 720px){ .row{grid-template-columns:1fr} }
+    .btns{display:flex; flex-wrap:wrap; gap:10px; margin-top:12px}
+    button{
+      border:1px solid var(--line);
+      background:linear-gradient(180deg, rgba(124,183,255,.18), rgba(124,183,255,.10));
+      color:var(--text);
+      border-radius:12px;
+      padding:10px 12px;
+      font-size:13px;
+      cursor:pointer;
+      transition:transform .05s ease, background .15s ease, border-color .15s ease;
+    }
+    button:hover{border-color:rgba(124,183,255,.45)}
+    button:active{transform:translateY(1px)}
+    button.secondary{
+      background:linear-gradient(180deg, rgba(167,255,234,.14), rgba(167,255,234,.08));
+      border-color:rgba(167,255,234,.22);
+    }
+    button.ghost{
+      background:transparent;
+      border-color:var(--line2);
+      color:var(--muted);
+    }
+    .status{
+      margin-top:10px;
+      font-size:12px;
+      color:var(--muted);
+      display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+    }
+    .pill{
+      padding:4px 10px;
+      border-radius:999px;
+      border:1px solid var(--line2);
+      background:rgba(6,10,18,.55);
+      font-family:var(--mono);
+      font-size:12px;
+      color:var(--muted);
+    }
+    .pill.good{border-color:rgba(125,255,179,.24); color:var(--good)}
+    .pill.bad{border-color:rgba(255,107,107,.28); color:var(--bad)}
+    .mono{font-family:var(--mono)}
+    .small{font-size:12px; color:var(--muted); line-height:1.45}
+    .warn{border-left:3px solid rgba(255,187,107,.65); padding-left:10px}
+    .ok{border-left:3px solid rgba(125,255,179,.45); padding-left:10px}
+    .kvs{display:grid; grid-template-columns: 140px 1fr; gap:8px; margin-top:10px}
+    @media (max-width: 720px){ .kvs{grid-template-columns:1fr} }
+    .k{color:var(--muted); font-size:12px}
+    .v{font-family:var(--mono); font-size:12px; color:var(--text); word-break:break-all}
+    .divider{height:1px; background:var(--line2); margin:12px 0}
+    .footer{margin-top:14px; color:var(--muted); font-size:12px}
+    a{color:var(--accent)}
+    .spin{
+      width:14px; height:14px; border:2px solid rgba(124,183,255,.25);
+      border-top-color: rgba(124,183,255,.9);
+      border-radius:50%;
+      display:inline-block;
+      animation:spin .8s linear infinite;
+    }
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .hidden{display:none !important}
+
+    /* Results list */
+    .listTools{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:10px}
+    .hint{color:var(--muted); font-size:12px}
+    .resultsWrap{margin-top:10px}
+    .resultsTop{
+      display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap;
+      padding:10px 10px; border:1px solid var(--line2); border-radius:14px;
+      background:rgba(6,10,18,.35);
+    }
+    .resultsTop .left{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+    .toggleRow{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+    .toggleRow label{margin:0}
+    .toggleRow input[type="checkbox"]{width:auto; transform:translateY(1px)}
+    .countBadge{
+      font-family:var(--mono);
+      font-size:12px;
+      padding:5px 10px;
+      border:1px solid var(--line2);
+      border-radius:999px;
+      background:rgba(6,10,18,.45);
+      color:var(--muted);
+    }
+    .results{
+      margin-top:10px;
+      border:1px solid var(--line2);
+      border-radius:14px;
+      overflow:hidden;
+      background:rgba(6,10,18,.35);
+      max-height:520px;
+      overflow:auto;
+    }
+    .rowItem{
+      display:grid;
+      grid-template-columns: 42px 1fr auto;
+      gap:10px;
+      align-items:center;
+      padding:10px;
+      border-top:1px solid rgba(124,183,255,.08);
+    }
+    .rowItem:first-child{border-top:none}
+    .iconBox{
+      width:34px; height:34px;
+      border-radius:10px;
+      border:1px solid rgba(124,183,255,.15);
+      background:rgba(11,18,34,.6);
+      display:grid; place-items:center;
+      overflow:hidden;
+      position:relative;
+    }
+    .iconBox img{
+      width:100%; height:100%;
+      object-fit:cover;
+      image-rendering: pixelated;
+      display:block;
+    }
+    .iconFallback{
+      font-family:var(--mono);
+      color:rgba(124,183,255,.75);
+      font-size:12px;
+      padding:0 6px;
+      text-align:center;
+      line-height:1.1;
+    }
+    .pathText{
+      font-family:var(--mono);
+      font-size:12px;
+      color:var(--text);
+      word-break:break-all;
+    }
+    .actions{
+      display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end;
+    }
+    .miniBtn{
+      padding:8px 10px;
+      border-radius:12px;
+      font-size:12px;
+    }
+    .miniBtn.ghost{padding:8px 10px}
+    .miniPill{
+      font-family:var(--mono);
+      font-size:11px;
+      color:var(--muted);
+      border:1px solid rgba(124,183,255,.12);
+      border-radius:999px;
+      padding:4px 8px;
+      background:rgba(6,10,18,.4);
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1>Minecraft Bedrock Texture Path Array Builder</h1>
+  <div class="sub">
+    Pulls texture paths from a GitHub repo and (by default) always uses the <b>latest stable release</b>.
+    Includes search, thumbnails, and per-path copy.
+  </div>
+</header>
+
+<main>
+  <div class="grid">
+    <section class="card">
+      <h2>Source</h2>
+
+      <div class="small ok">
+        Default repo is <span class="mono">Mojang/bedrock-samples</span> and the tool automatically resolves the <b>latest stable release</b>
+        using GitHub’s <span class="mono">/releases/latest</span> endpoint (non-draft, non-prerelease).
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="repo">GitHub repo (owner/name)</label>
+          <input id="repo" placeholder="Mojang/bedrock-samples" value="Mojang/bedrock-samples" autocomplete="off" />
+        </div>
+        <div>
+          <label for="ref">Ref override (tag/branch/commit) — optional</label>
+          <input id="ref" placeholder="Leave blank = use latest stable release tag" autocomplete="off" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="pathFilter">Only include files under this path (substring match)</label>
+          <input id="pathFilter" value="textures/" autocomplete="off" />
+        </div>
+        <div>
+          <label for="exts">Extensions (comma-separated)</label>
+          <input id="exts" value=".png,.tga,.jpg,.jpeg,.gif,.webp" autocomplete="off" />
+        </div>
+      </div>
+
+      <label for="token">GitHub token — optional (avoids rate limits)</label>
+      <input id="token" placeholder="ghp_... (kept only in this page memory)" autocomplete="off" />
+
+      <div class="btns">
+        <button id="btnFetch">Fetch texture paths</button>
+        <button id="btnClear" class="ghost">Clear</button>
+      </div>
+
+      <div id="status" class="status hidden">
+        <span id="spin" class="spin hidden"></span>
+        <span id="statusText"></span>
+        <span id="statusPill" class="pill hidden"></span>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="row">
+        <div>
+          <h2>Output options</h2>
+          <label for="mode">Output format</label>
+          <select id="mode">
+            <option value="relative" selected>Relative paths (repo paths)</option>
+            <option value="raw">Raw GitHub URLs</option>
+          </select>
+
+          <div class="btns">
+            <button id="btnDownloadJS" class="secondary" disabled>Download JS array</button>
+            <button id="btnDownloadJSON" class="secondary" disabled>Download JSON</button>
+            <button id="btnCopyAll" disabled>Copy current preview</button>
+          </div>
+
+          <div class="footer">
+            Release source: <span class="mono">https://github.com/Mojang/bedrock-samples/releases</span>
+          </div>
+        </div>
+        <div>
+          <h2>Resolved release</h2>
+          <div class="kvs">
+            <div class="k">Repo</div><div class="v" id="statRepo">—</div>
+            <div class="k">Release tag</div><div class="v" id="statTag">—</div>
+            <div class="k">Published</div><div class="v" id="statPub">—</div>
+            <div class="k">Matches</div><div class="v" id="statCount">0</div>
+            <div class="k">Truncated</div><div class="v" id="statTrunc">—</div>
+          </div>
+          <div class="small" style="margin-top:10px">
+            If GitHub returns <span class="mono">truncated: true</span>, the repo tree exceeded the maximum size for this endpoint.
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <h2>Search & browse</h2>
+      <label for="search">Search within results</label>
+      <input id="search" placeholder="Search (e.g. blocks/stone, ui/, armor, .png)..." autocomplete="off" />
+
+      <div class="listTools">
+        <div class="toggleRow">
+          <input id="thumbs" type="checkbox" checked />
+          <label for="thumbs" style="display:inline">Show icons</label>
+        </div>
+        <div class="toggleRow">
+          <input id="clickCopy" type="checkbox" checked />
+          <label for="clickCopy" style="display:inline">Click path to copy</label>
+        </div>
+        <span class="hint">Icons are loaded from raw GitHub URLs (works best for .png/.jpg/.webp).</span>
+      </div>
+
+      <div class="resultsWrap">
+        <div class="resultsTop">
+          <div class="left">
+            <span class="countBadge"><span id="shownCount">0</span> shown</span>
+            <span class="countBadge"><span id="totalCount">0</span> total</span>
+            <span class="countBadge"><span id="pageInfo">—</span></span>
+          </div>
+          <div class="right">
+            <button id="btnShowMore" class="ghost miniBtn" disabled>Show more</button>
+            <button id="btnCopyFiltered" class="miniBtn" disabled>Copy filtered (paths)</button>
+          </div>
+        </div>
+
+        <div id="results" class="results" aria-live="polite"></div>
+
+        <div class="small" style="margin-top:10px">
+          <b>Copy any path:</b> use the “Copy” button on a row, or (if enabled) tap/click the path text.
+        </div>
+      </div>
+
+    </section>
+
+    <section class="card">
+      <h2>Preview</h2>
+      <label for="out">Generated array (preview)</label>
+      <textarea id="out" spellcheck="false" placeholder="Click “Fetch texture paths” to generate…"></textarea>
+      <div class="small ok" style="margin-top:10px">
+        Tip: For resource packs, texture references are usually relative to the pack (like <span class="mono">textures/blocks/stone.png</span>).
+      </div>
+    </section>
+  </div>
+</main>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+
+  const els = {
+    repo: $("repo"),
+    ref: $("ref"),
+    pathFilter: $("pathFilter"),
+    exts: $("exts"),
+    token: $("token"),
+    btnFetch: $("btnFetch"),
+    btnClear: $("btnClear"),
+    btnDownloadJS: $("btnDownloadJS"),
+    btnDownloadJSON: $("btnDownloadJSON"),
+    btnCopyAll: $("btnCopyAll"),
+    out: $("out"),
+    mode: $("mode"),
+    status: $("status"),
+    spin: $("spin"),
+    statusText: $("statusText"),
+    statusPill: $("statusPill"),
+    statRepo: $("statRepo"),
+    statTag: $("statTag"),
+    statPub: $("statPub"),
+    statCount: $("statCount"),
+    statTrunc: $("statTrunc"),
+    search: $("search"),
+    results: $("results"),
+    shownCount: $("shownCount"),
+    totalCount: $("totalCount"),
+    pageInfo: $("pageInfo"),
+    btnShowMore: $("btnShowMore"),
+    btnCopyFiltered: $("btnCopyFiltered"),
+    thumbs: $("thumbs"),
+    clickCopy: $("clickCopy"),
+  };
+
+  const PAGE_SIZE = 250;
+  let renderLimit = PAGE_SIZE;
+
+  let last = {
+    owner: "",
+    repo: "",
+    ref: "",            // the ref we actually use for trees/raw URLs (tag or branch)
+    releaseTag: "",     // resolved stable release tag (if used)
+    publishedAt: "",    // published timestamp (if release)
+    truncated: false,
+    relativePaths: [],
+    rawUrls: [],
+  };
+
+  function setStatus(text, kind=null, pillText=null) {
+    els.status.classList.remove("hidden");
+    els.spin.classList.toggle("hidden", kind !== "loading");
+    els.statusText.textContent = text || "";
+    if (pillText) {
+      els.statusPill.textContent = pillText;
+      els.statusPill.classList.remove("hidden", "good", "bad");
+      if (kind === "good") els.statusPill.classList.add("good");
+      if (kind === "bad") els.statusPill.classList.add("bad");
+    } else {
+      els.statusPill.classList.add("hidden");
+    }
+  }
+
+  function clearAll() {
+    last = { owner:"", repo:"", ref:"", releaseTag:"", publishedAt:"", truncated:false, relativePaths:[], rawUrls:[] };
+    renderLimit = PAGE_SIZE;
+    els.out.value = "";
+    els.search.value = "";
+    els.results.innerHTML = "";
+    els.statRepo.textContent = "—";
+    els.statTag.textContent = "—";
+    els.statPub.textContent = "—";
+    els.statCount.textContent = "0";
+    els.statTrunc.textContent = "—";
+    els.shownCount.textContent = "0";
+    els.totalCount.textContent = "0";
+    els.pageInfo.textContent = "—";
+    for (const b of [els.btnDownloadJS, els.btnDownloadJSON, els.btnCopyAll, els.btnCopyFiltered, els.btnShowMore]) b.disabled = true;
+    els.status.classList.add("hidden");
+  }
+
+  function safeJson(value) {
+    return JSON.stringify(value, null, 2);
+  }
+
+  function parseRepo(input) {
+    const t = (input || "").trim().replace(/^https?:\/\/github\.com\//i, "").replace(/\/+$/,"");
+    const parts = t.split("/");
+    if (parts.length < 2) return null;
+    const owner = parts[0].trim();
+    const repo = parts[1].trim().replace(/\.git$/i, "");
+    if (!owner || !repo) return null;
+    return { owner, repo };
+  }
+
+  function parseExts(input) {
+    return (input || "")
+      .split(",")
+      .map(s => s.trim().toLowerCase())
+      .filter(Boolean)
+      .map(s => s.startsWith(".") ? s : ("." + s));
+  }
+
+  function makeHeaders() {
+    const h = { "Accept": "application/vnd.github+json" };
+    const token = (els.token.value || "").trim();
+    if (token) h["Authorization"] = "Bearer " + token;
+    return h;
+  }
+
+  async function ghJson(url) {
+    const r = await fetch(url, { headers: makeHeaders() });
+    const text = await r.text();
+    let data = null;
+    try { data = JSON.parse(text); } catch {}
+    if (!r.ok) {
+      const msg = (data && (data.message || data.error)) ? (data.message || data.error) : text;
+      const err = new Error(`GitHub API error ${r.status}: ${msg}`);
+      err.status = r.status;
+      err.payload = data;
+      throw err;
+    }
+    return data;
+  }
+
+  function rawUrlForPath(p) {
+    if (!last.owner || !last.repo || !last.ref) return "";
+    return `https://raw.githubusercontent.com/${last.owner}/${last.repo}/${last.ref}/${p}`;
+  }
+
+  function getArrayForMode(mode) {
+    return (mode === "raw") ? last.rawUrls : last.relativePaths;
+  }
+
+  function buildPreview() {
+    const mode = els.mode.value;
+    const arr = getArrayForMode(mode);
+
+    const refLine = last.releaseTag
+      ? `// Release tag: ${last.releaseTag}\n// Published: ${last.publishedAt || "—"}\n`
+      : "";
+
+    const preview = `// Generated: ${new Date().toISOString()}\n` +
+      `// Repo: ${last.owner}/${last.repo}\n` +
+      refLine +
+      `// Ref used: ${last.ref}\n` +
+      `// Count: ${arr.length}\n` +
+      `const texturePaths = ${safeJson(arr)};\n`;
+
+    els.out.value = preview;
+
+    const enabled = (arr.length > 0);
+    for (const b of [els.btnDownloadJS, els.btnDownloadJSON, els.btnCopyAll]) b.disabled = !enabled;
+  }
+
+  function downloadText(filename, content, mime="text/plain") {
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
+
+  async function copyToClipboard(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setStatus("Copied to clipboard.", "good", "OK");
+      return true;
+    } catch { return false; }
+  }
+
+  function legacyCopy(text) {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.left = "-9999px";
+    ta.style.top = "-9999px";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    const ok = document.execCommand("copy");
+    ta.remove();
+    setStatus(ok ? "Copied to clipboard." : "Copy failed. Try again.", ok ? "good" : "bad", ok ? "OK" : "ERR");
+    return ok;
+  }
+
+  async function copySmart(text) {
+    const ok = await copyToClipboard(text);
+    if (!ok) legacyCopy(text);
+  }
+
+  function currentFilteredPaths() {
+    const q = (els.search.value || "").trim().toLowerCase();
+    const arr = last.relativePaths;
+    if (!q) return arr.slice();
+    return arr.filter(p => p.toLowerCase().includes(q));
+  }
+
+  function updatePagingUI(filteredLen) {
+    const shown = Math.min(filteredLen, renderLimit);
+    els.shownCount.textContent = String(shown);
+    els.totalCount.textContent = String(filteredLen);
+    els.pageInfo.textContent = filteredLen ? `${shown}/${filteredLen}` : "—";
+    els.btnShowMore.disabled = !(filteredLen > renderLimit);
+    els.btnCopyFiltered.disabled = (filteredLen === 0);
+  }
+
+  function createRowItem(path) {
+    const row = document.createElement("div");
+    row.className = "rowItem";
+
+    const icon = document.createElement("div");
+    icon.className = "iconBox";
+
+    const ext = (path.toLowerCase().match(/\.[a-z0-9]+$/) || [""])[0];
+    const fallback = document.createElement("div");
+    fallback.className = "iconFallback";
+    fallback.textContent = ext ? ext.slice(1).toUpperCase() : "FILE";
+    icon.appendChild(fallback);
+
+    const img = document.createElement("img");
+    img.loading = "lazy";
+    img.decoding = "async";
+
+    const isLikelyImage = [".png",".jpg",".jpeg",".gif",".webp",".tga"].includes(ext);
+    if (isLikelyImage) {
+      const u = rawUrlForPath(path);
+      img.src = u;
+      img.alt = "";
+      img.addEventListener("load", () => {
+        if (!icon.contains(img)) {
+          icon.innerHTML = "";
+          icon.appendChild(img);
+        }
+      }, { once:true });
+      img.addEventListener("error", () => {}, { once:true });
+    }
+
+    const text = document.createElement("div");
+    text.className = "pathText";
+    text.textContent = path;
+    text.title = "Copy path";
+    if (els.clickCopy.checked) {
+      text.style.cursor = "pointer";
+      text.addEventListener("click", () => copySmart(path));
+    } else {
+      text.style.cursor = "default";
+    }
+
+    const actions = document.createElement("div");
+    actions.className = "actions";
+
+    const copyBtn = document.createElement("button");
+    copyBtn.className = "miniBtn";
+    copyBtn.type = "button";
+    copyBtn.textContent = "Copy";
+    copyBtn.addEventListener("click", () => copySmart(path));
+
+    const rawBtn = document.createElement("button");
+    rawBtn.className = "miniBtn ghost";
+    rawBtn.type = "button";
+    rawBtn.textContent = "Raw";
+    rawBtn.title = "Open raw file URL in a new tab";
+    rawBtn.addEventListener("click", () => {
+      const u = rawUrlForPath(path);
+      if (u) window.open(u, "_blank", "noopener,noreferrer");
+    });
+
+    const tag = document.createElement("span");
+    tag.className = "miniPill";
+    tag.textContent = ext || "—";
+
+    actions.appendChild(tag);
+    actions.appendChild(copyBtn);
+    actions.appendChild(rawBtn);
+
+    row.appendChild(icon);
+    row.appendChild(text);
+    row.appendChild(actions);
+
+    const showThumbs = els.thumbs.checked;
+    icon.style.visibility = showThumbs ? "visible" : "hidden";
+    icon.style.width = showThumbs ? "34px" : "0px";
+    icon.style.height = showThumbs ? "34px" : "0px";
+    icon.style.marginRight = showThumbs ? "" : "-10px";
+
+    return row;
+  }
+
+  function renderResults() {
+    const filtered = currentFilteredPaths();
+    const toShow = filtered.slice(0, renderLimit);
+    els.results.innerHTML = "";
+
+    const frag = document.createDocumentFragment();
+    for (const p of toShow) frag.appendChild(createRowItem(p));
+    els.results.appendChild(frag);
+
+    updatePagingUI(filtered.length);
+  }
+
+  async function resolveLatestStableReleaseTag(owner, repo) {
+    // GitHub definition: "latest release" = most recent non-prerelease, non-draft release.
+    const rel = await ghJson(`https://api.github.com/repos/${owner}/${repo}/releases/latest`);
+    const tag = rel && rel.tag_name ? String(rel.tag_name) : "";
+    const published = rel && rel.published_at ? String(rel.published_at) : "";
+    if (!tag) throw new Error("Could not resolve latest stable release tag (missing tag_name).");
+    return { tag, published };
+  }
+
+  async function fetchPaths() {
+    const parsed = parseRepo(els.repo.value);
+    if (!parsed) {
+      setStatus("Enter a repo like “Mojang/bedrock-samples”.", "bad", "INPUT");
+      return;
+    }
+    const refOverride = (els.ref.value || "").trim();
+    const pathFilter = (els.pathFilter.value || "").trim().toLowerCase();
+    const exts = parseExts(els.exts.value);
+    if (exts.length === 0) {
+      setStatus("Enter at least one extension (e.g. .png).", "bad", "INPUT");
+      return;
+    }
+
+    setStatus("Contacting GitHub…", "loading");
+    for (const b of [els.btnDownloadJS, els.btnDownloadJSON, els.btnCopyAll, els.btnCopyFiltered, els.btnShowMore]) b.disabled = true;
+
+    try {
+      // 1) Resolve ref: either user override, or latest stable release tag
+      let ref = refOverride;
+      let releaseTag = "";
+      let publishedAt = "";
+
+      if (!ref) {
+        setStatus(`Resolving latest stable release for ${parsed.owner}/${parsed.repo}…`, "loading");
+        const rel = await resolveLatestStableReleaseTag(parsed.owner, parsed.repo);
+        releaseTag = rel.tag;
+        publishedAt = rel.published;
+        ref = releaseTag;
+      }
+
+      // 2) Tree (works for tags, branches, commits)
+      setStatus(`Fetching file tree for ${parsed.owner}/${parsed.repo}@${ref}…`, "loading");
+      const tree = await ghJson(`https://api.github.com/repos/${parsed.owner}/${parsed.repo}/git/trees/${encodeURIComponent(ref)}?recursive=1`);
+
+      const truncated = !!tree.truncated;
+      const items = Array.isArray(tree.tree) ? tree.tree : [];
+
+      // 3) Filter
+      const matches = [];
+      for (const it of items) {
+        if (!it || it.type !== "blob" || typeof it.path !== "string") continue;
+        const p = it.path;
+        const pl = p.toLowerCase();
+        if (pathFilter && !pl.includes(pathFilter)) continue;
+        const dot = pl.lastIndexOf(".");
+        if (dot === -1) continue;
+        const ext = pl.slice(dot);
+        if (!exts.includes(ext)) continue;
+        matches.push(p);
+      }
+      matches.sort((a,b) => a.localeCompare(b));
+
+      // 4) Save + build raw URLs
+      last.owner = parsed.owner;
+      last.repo = parsed.repo;
+      last.ref = ref;
+      last.releaseTag = releaseTag;
+      last.publishedAt = publishedAt;
+      last.truncated = truncated;
+      last.relativePaths = matches;
+      last.rawUrls = matches.map(p => rawUrlForPath(p));
+
+      renderLimit = PAGE_SIZE;
+
+      els.statRepo.textContent = `${parsed.owner}/${parsed.repo}`;
+      els.statTag.textContent = releaseTag ? releaseTag : "(override)";
+      els.statPub.textContent = publishedAt || (refOverride ? "(override)" : "—");
+      els.statCount.textContent = String(matches.length);
+      els.statTrunc.textContent = truncated ? "true" : "false";
+
+      buildPreview();
+      renderResults();
+
+      if (truncated) {
+        setStatus(`Done, but the tree was truncated by GitHub. Found ${matches.length} matches.`, "bad", "TRUNC");
+      } else {
+        setStatus(`Done. Found ${matches.length} texture files.`, "good", "OK");
+      }
+    } catch (err) {
+      console.error(err);
+      const msg = (err && err.message) ? err.message : String(err);
+      const hint = (err && err.status === 403) ? " (Possible rate limit — add a token.)" : "";
+      setStatus(`Failed: ${msg}${hint}`, "bad", "ERR");
+    }
+  }
+
+  els.btnFetch.addEventListener("click", fetchPaths);
+  els.btnClear.addEventListener("click", clearAll);
+
+  els.mode.addEventListener("change", buildPreview);
+
+  els.btnDownloadJS.addEventListener("click", () => {
+    const mode = els.mode.value;
+    const arr = getArrayForMode(mode);
+    const meta = last.releaseTag
+      ? `// Release tag: ${last.releaseTag}\n// Published: ${last.publishedAt || "—"}\n`
+      : "";
+    const content =
+      `// Generated: ${new Date().toISOString()}\n` +
+      `// Repo: ${last.owner}/${last.repo}\n` +
+      meta +
+      `// Ref used: ${last.ref}\n` +
+      `export const texturePaths = ${safeJson(arr)};\n`;
+    const filename = `texturePaths_${last.owner}_${last.repo}_${last.ref}_${mode}.js`.replace(/[^\w.\-]+/g,"_");
+    downloadText(filename, content, "text/javascript");
+  });
+
+  els.btnDownloadJSON.addEventListener("click", () => {
+    const mode = els.mode.value;
+    const arr = getArrayForMode(mode);
+    const filename = `texturePaths_${last.owner}_${last.repo}_${last.ref}_${mode}.json`.replace(/[^\w.\-]+/g,"_");
+    downloadText(filename, safeJson(arr), "application/json");
+  });
+
+  els.btnCopyAll.addEventListener("click", async () => copySmart(els.out.value || ""));
+
+  els.search.addEventListener("input", () => {
+    renderLimit = PAGE_SIZE;
+    renderResults();
+  });
+
+  els.btnShowMore.addEventListener("click", () => {
+    renderLimit += PAGE_SIZE;
+    renderResults();
+  });
+
+  els.btnCopyFiltered.addEventListener("click", async () => {
+    const filtered = currentFilteredPaths();
+    await copySmart(filtered.join("\n"));
+  });
+
+  els.thumbs.addEventListener("change", renderResults);
+  els.clickCopy.addEventListener("change", renderResults);
+
+  clearAll();
+})();
+</script>
+</body>
+</html>
